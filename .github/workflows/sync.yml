@@ -45,7 +45,7 @@ jobs:
           echo "$SH_SHA256  HMCL-$HMCL_VERSION.sh" | sha256sum -c
       - name: Generate release note
         run: |
-          echo "[更新日志](https://docs.hmcl.net/changelog/${{ matrix.channel }}.html#HMCL-$HMCL_VERSION)" >> RELEASE_NOTE
+          echo "[更新日志](https://docs.hmcl.net/changelog/${{ github.event.inputs.channel }}.html#HMCL-$HMCL_VERSION)" >> RELEASE_NOTE
           echo "" >> RELEASE_NOTE
           echo "| 文件 | SHA-256 校验码 |"  >> RELEASE_NOTE
           echo "| ---  | --- |" >> RELEASE_NOTE
