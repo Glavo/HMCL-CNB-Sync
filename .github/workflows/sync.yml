@@ -40,3 +40,4 @@ jobs:
       - name: Install CNB CLI
         run: |
           go install "cnb.cool/looc/git-cnb@$GIT_CNB_VERSION"
+          git-cnb --help
