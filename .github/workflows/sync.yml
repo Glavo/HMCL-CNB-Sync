@@ -20,24 +20,52 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GIT_CNB_VERSION: '1.1.2'
+      HMCL_VERSION: ${{ github.event.inputs.version }}
+      GH_DOWNLOAD_BASE_URL: https://github.com/HMCL-dev/HMCL/releases/download
+      CNB_DOWNLOAD_BASE_URL: https://cnb.cool/HMCL-dev/HMCL/-/releases/download
     steps:
       - name: Download artifacts from GitHub Releases
-        env:
-          VERSION: ${{ github.event.inputs.version }}
-          CHANNEL: ${{ github.event.inputs.channel }}
-          GH_DOWNLOAD_BASE_URL: https://github.com/HMCL-dev/HMCL/releases/download
-          CNB_DOWNLOAD_BASE_URL: https://cnb.cool/HMCL-dev/HMCL/-/releases/download
-          CNB_SYNC_TOKEN: ${{ secrets.CNB_SYNC_TOKEN }}
         run: |
-          wget "$GH_DOWNLOAD_BASE_URL/v$VERSION/HMCL-$VERSION.jar" -O "HMCL-$VERSION.jar"
-          wget "$GH_DOWNLOAD_BASE_URL/v$VERSION/HMCL-$VERSION.exe" -O "HMCL-$VERSION.exe"
-          wget "$GH_DOWNLOAD_BASE_URL/v$VERSION/HMCL-$VERSION.sh"  -O "HMCL-$VERSION.sh"
-      - name: Check Go version
+          wget "$GH_DOWNLOAD_BASE_URL/v$HMCL_VERSION/HMCL-$HMCL_VERSION.jar" -O "HMCL-$HMCL_VERSION.jar"
+          wget "$GH_DOWNLOAD_BASE_URL/v$HMCL_VERSION/HMCL-$HMCL_VERSION.exe" -O "HMCL-$HMCL_VERSION.exe"
+          wget "$GH_DOWNLOAD_BASE_URL/v$HMCL_VERSION/HMCL-$HMCL_VERSION.sh"  -O "HMCL-$HMCL_VERSION.sh"
+          
+          gh release view -R HMCL-dev/HMCL "v$HMCL_VERSION" --json assets > assets.json
+          
+          export JAR_SHA256=$(jq -r -j ".assets[] | select(.name == \"HMCL-$HMCL_VERSION.jar\") | .digest | gsub(\"^sha256:\"; \"\")" assets.json)
+          export EXE_SHA256=$(jq -r -j ".assets[] | select(.name == \"HMCL-$HMCL_VERSION.exe\") | .digest | gsub(\"^sha256:\"; \"\")" assets.json)
+          export SH_SHA256=$(jq -r -j ".assets[] | select(.name == \"HMCL-$HMCL_VERSION.sh\") | .digest | gsub(\"^sha256:\"; \"\")" assets.json)
+          
+          echo -n "$JAR_SHA256" > "HMCL-$HMCL_VERSION.jar.sha256"
+          echo -n "$EXE_SHA256" > "HMCL-$HMCL_VERSION.exe.sha256"
+          echo -n "$SH_SHA256" > "HMCL-$HMCL_VERSION.SH.sha256"
+          
+          echo "$JAR_SHA256  HMCL-$HMCL_VERSION.jar" | sha256sum -c
+          echo "$EXE_SHA256  HMCL-$HMCL_VERSION.exe" | sha256sum -c
+          echo "$SH_SHA256  HMCL-$HMCL_VERSION.sh" | sha256sum -c
+      - name: Generate release note
         run: |
-          go version
-          echo "GOPATH: $GOPATH"
-          echo "PATH: $PATH"
+          echo "[更新日志](https://docs.hmcl.net/changelog/${{ matrix.channel }}.html#HMCL-$HMCL_VERSION)" >> RELEASE_NOTE
+          echo "" >> RELEASE_NOTE
+          echo "| 文件 | SHA-256 校验码 |"  >> RELEASE_NOTE
+          echo "| ---  | --- |" >> RELEASE_NOTE
+          echo "| [HMCL-$HMCL_VERSION.exe]($CNB_DOWNLOAD_BASE_URL/v$HMCL_VERSION/HMCL-$HMCL_VERSION.exe) | \`$(cat HMCL-$HMCL_VERSION.exe.sha256)\` |" >> RELEASE_NOTE
+          echo "| [HMCL-$HMCL_VERSION.jar]($CNB_DOWNLOAD_BASE_URL/v$HMCL_VERSION/HMCL-$HMCL_VERSION.jar) | \`$(cat HMCL-$HMCL_VERSION.jar.sha256)\` |" >> RELEASE_NOTE
+          echo "| [HMCL-$HMCL_VERSION.sh]($CNB_DOWNLOAD_BASE_URL/v$HMCL_VERSION/HMCL-$HMCL_VERSION.sh)   | \`$(cat HMCL-$HMCL_VERSION.sh.sha256)\` |"  >> RELEASE_NOTE
       - name: Install CNB CLI
         run: |
           go install "cnb.cool/looc/git-cnb@$GIT_CNB_VERSION"
-          git-cnb --help
+      - name: Create CNB release
+        run: |
+          ~/go/bin/git-cnb release create \
+            --repo HMCL-dev/HMCL \
+            --tag "v$HMCL_VERSION" \
+            --name "HMCL $HMCL_VERSION" \
+            --body "$(cat RE)" \
+            --prerelease true
+          
+          ~/go/bin/git-cnb release asset-upload --repo=HMCL-dev/HMCL --tag-name "v$HMCL_VERSION" --file-name "HMCL-$HMCL_VERSION.jar"
+          ~/go/bin/git-cnb release asset-upload --repo=HMCL-dev/HMCL --tag-name "v$HMCL_VERSION" --file-name "HMCL-$HMCL_VERSION.exe"
+          ~/go/bin/git-cnb release asset-upload --repo=HMCL-dev/HMCL --tag-name "v$HMCL_VERSION" --file-name "HMCL-$HMCL_VERSION.sh"
+        env:
+          CNB_TOKEN: ${{ secrets.CNB_SYNC_TOKEN }}

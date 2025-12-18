@@ -1,1 +1,7 @@
 .idea/
+*.json
+*.exe
+*.jar
+*.sh
+*.sha256
+*.iml
