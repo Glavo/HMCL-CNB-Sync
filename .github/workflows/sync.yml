@@ -38,7 +38,7 @@ jobs:
           
           echo -n "$JAR_SHA256" > "HMCL-$HMCL_VERSION.jar.sha256"
           echo -n "$EXE_SHA256" > "HMCL-$HMCL_VERSION.exe.sha256"
-          echo -n "$SH_SHA256" > "HMCL-$HMCL_VERSION.SH.sha256"
+          echo -n "$SH_SHA256" > "HMCL-$HMCL_VERSION.sh.sha256"
           
           echo "$JAR_SHA256  HMCL-$HMCL_VERSION.jar" | sha256sum -c
           echo "$EXE_SHA256  HMCL-$HMCL_VERSION.exe" | sha256sum -c
@@ -66,8 +66,13 @@ jobs:
             --body "$(cat CNB_RELEASE_NOTE)" \
             --prerelease true
           
+          echo "Uploading HMCL-$HMCL_VERSION.jar"
           ~/go/bin/git-cnb release asset-upload --repo=HMCL-dev/HMCL --tag-name "v$HMCL_VERSION" --file-name "HMCL-$HMCL_VERSION.jar"
+          
+          echo "Uploading HMCL-$HMCL_VERSION.exe"
           ~/go/bin/git-cnb release asset-upload --repo=HMCL-dev/HMCL --tag-name "v$HMCL_VERSION" --file-name "HMCL-$HMCL_VERSION.exe"
+          
+          echo "Uploading HMCL-$HMCL_VERSION.sh"
           ~/go/bin/git-cnb release asset-upload --repo=HMCL-dev/HMCL --tag-name "v$HMCL_VERSION" --file-name "HMCL-$HMCL_VERSION.sh"
         env:
           CNB_TOKEN: ${{ secrets.CNB_SYNC_TOKEN }}
