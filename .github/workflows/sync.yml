@@ -1,0 +1,42 @@
+name: Sync HMCL to CNB
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        type: string
+        description: 'Version to sync'
+        required: true
+      channel:
+        type: choice
+        description: 'Release channel'
+        required: true
+        options:
+          - dev
+          - stable
+        default: dev
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    env:
+      GIT_CNB_VERSION: '1.1.2'
+    steps:
+      - name: Download artifacts from GitHub Releases
+        env:
+          VERSION: ${{ github.event.inputs.version }}
+          CHANNEL: ${{ github.event.inputs.channel }}
+          GH_DOWNLOAD_BASE_URL: https://github.com/HMCL-dev/HMCL/releases/download
+          CNB_DOWNLOAD_BASE_URL: https://cnb.cool/HMCL-dev/HMCL/-/releases/download
+          CNB_SYNC_TOKEN: ${{ secrets.CNB_SYNC_TOKEN }}
+        run: |
+          wget "$GH_DOWNLOAD_BASE_URL/v$VERSION/HMCL-$VERSION.jar" -O "HMCL-$VERSION.jar"
+          wget "$GH_DOWNLOAD_BASE_URL/v$VERSION/HMCL-$VERSION.exe" -O "HMCL-$VERSION.exe"
+          wget "$GH_DOWNLOAD_BASE_URL/v$VERSION/HMCL-$VERSION.sh"  -O "HMCL-$VERSION.sh"
+      - name: Check Go version
+        run: |
+          go version
+          echo "GOPATH: $GOPATH"
+          echo "PATH: $PATH"
+      - name: Install CNB CLI
+        run: |
+          go install "cnb.cool/looc/git-cnb@$GIT_CNB_VERSION"
